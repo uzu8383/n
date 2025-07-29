@@ -33,18 +33,19 @@ if %ERRORLEVEL% equ 0 (
 )
 
 REM Check for CUDA
-echo Checking for CUDA 12.9...
+echo Checking for CUDA...
 if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9" (
-    echo [OK] CUDA 12.9 found
+    echo [OK] CUDA 12.9 found (Latest)
     set CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9
 ) else if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8" (
-    echo [WARNING] Found CUDA 12.8, but 12.9 is recommended
-    echo Please update to CUDA 12.9 for best performance
+    echo [OK] CUDA 12.8 found (Compatible)
+    echo Note: CUDA 12.9 is available for better performance
     set CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8
 ) else (
-    echo [ERROR] CUDA 12.9 not found in default location
-    echo Please ensure CUDA 12.9 is installed
+    echo [ERROR] CUDA not found in default location
+    echo Please ensure CUDA 12.8 or 12.9 is installed
     echo Download from: https://developer.nvidia.com/cuda-downloads
+    goto :error
 )
 
 REM Check for OpenCV
@@ -66,11 +67,25 @@ if exist "C:\opencv\build\x64\vc16\lib\opencv_cudaimgproc*.lib" (
     echo For optimal performance, use OpenCV compiled with CUDA support
 )
 
+REM Check nvidia-smi availability
+echo.
+echo Checking nvidia-smi...
+nvidia-smi >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    echo [OK] nvidia-smi working - GPU driver installed
+    nvidia-smi --query-gpu=name,memory.total,compute_cap --format=csv,noheader,nounits
+) else (
+    echo [WARNING] nvidia-smi not working - GPU driver may be missing
+    echo Please install NVIDIA GPU driver for RTX A4000
+    echo Download from: https://www.nvidia.com/drivers
+    echo See NVIDIA_SMI_TROUBLESHOOTING.md for detailed help
+)
+
 REM Set environment variables
 echo.
 echo Setting up environment variables...
 set PATH=%PATH%;C:\opencv\build\x64\vc16\bin
-set PATH=%PATH%;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\bin
+set PATH=%PATH%;%CUDA_PATH%\bin
 set OpenCV_DIR=C:\opencv\build
 
 echo [OK] Environment setup completed successfully!

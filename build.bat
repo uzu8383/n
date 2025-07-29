@@ -24,12 +24,24 @@ echo Build Type: %CMAKE_BUILD_TYPE%
 echo CUDA Support: %WITH_CUDA%
 echo.
 
-REM Configure with CMake
+REM Configure with CMake (auto-detect CUDA version)
+if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9" (
+    set CUDA_ROOT=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9
+    echo Using CUDA 12.9
+) else if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8" (
+    set CUDA_ROOT=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8
+    echo Using CUDA 12.8
+) else (
+    echo ERROR: No compatible CUDA version found
+    pause
+    exit /b 1
+)
+
 cmake .. -G "Visual Studio 16 2019" -A x64 ^
     -DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE% ^
     -DWITH_CUDA=%WITH_CUDA% ^
     -DOpenCV_DIR="C:/opencv/build" ^
-    -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.9" ^
+    -DCUDA_TOOLKIT_ROOT_DIR="%CUDA_ROOT%" ^
     -DCMAKE_GENERATOR_TOOLSET=v142
 
 if %ERRORLEVEL% neq 0 (
