@@ -32,19 +32,20 @@ if %ERRORLEVEL% equ 0 (
     goto :error
 )
 
-REM Check for CUDA
+REM Check for CUDA (prioritize 12.8)
 echo Checking for CUDA...
-if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9" (
-    echo [OK] CUDA 12.9 found (Latest)
-    set CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9
-) else if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8" (
-    echo [OK] CUDA 12.8 found (Compatible)
-    echo Note: CUDA 12.9 is available for better performance
+if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8" (
+    echo [OK] CUDA 12.8 found (Primary choice)
     set CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8
+    echo Note: nvidia-smi may show 12.9 - this is normal (driver version)
+) else if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9" (
+    echo [OK] CUDA 12.9 found (Fallback)
+    set CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9
+    echo Note: CUDA 12.8 is the primary target for this project
 ) else (
     echo [ERROR] CUDA not found in default location
     echo Please ensure CUDA 12.8 or 12.9 is installed
-    echo Download from: https://developer.nvidia.com/cuda-downloads
+    echo Download CUDA 12.8: https://developer.nvidia.com/cuda-12-8-0-download-archive
     goto :error
 )
 

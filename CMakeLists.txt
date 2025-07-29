@@ -62,12 +62,17 @@ if(WITH_CUDA)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas -O3")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler /O2")
         
+        # CUDA 12.8 specific optimizations for RTX A4000
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DCUDA_12_8_OPTIMIZATIONS")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --gpu-architecture=sm_86")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
+        
         # VS 2019 CUDA host compiler
         if(MSVC_VERSION GREATER_EQUAL 1920 AND MSVC_VERSION LESS 1930)
             set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
         endif()
         
-        message(STATUS "CUDA support enabled")
+        message(STATUS "CUDA 12.8 support enabled with RTX A4000 optimizations")
         add_definitions(-DWITH_CUDA)
     else()
         set(WITH_CUDA OFF)

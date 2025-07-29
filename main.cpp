@@ -690,24 +690,47 @@ public:
 
 // Main function
 int main() {
-    std::cout << "RTSP Multi-Stream Monitor with OpenCV 4.12.0 + CUDA 12.9" << std::endl;
+    std::cout << "RTSP Multi-Stream Monitor with OpenCV 4.12.0 + CUDA 12.8" << std::endl;
     std::cout << "=========================================================" << std::endl;
     std::cout << "OpenCV Version: " << CV_VERSION << std::endl;
 
 #ifdef WITH_CUDA
     int cuda_devices = cv::cuda::getCudaEnabledDeviceCount();
     std::cout << "CUDA devices available: " << cuda_devices << std::endl;
+    
+    // Display CUDA version info
+    int cuda_runtime_version, cuda_driver_version;
+    cudaRuntimeGetVersion(&cuda_runtime_version);
+    cudaDriverGetVersion(&cuda_driver_version);
+    std::cout << "CUDA Runtime Version: " << cuda_runtime_version / 1000 << "." << (cuda_runtime_version % 100) / 10 << std::endl;
+    std::cout << "CUDA Driver Version: " << cuda_driver_version / 1000 << "." << (cuda_driver_version % 100) / 10 << std::endl;
+    
     if (cuda_devices > 0) {
         cv::cuda::printShortCudaDeviceInfo(cv::cuda::getDevice());
-        
-        // OpenCV 4.12.0 + CUDA 12.9 + A4000 optimizations
+
+        // OpenCV 4.12.0 + CUDA 12.8 + A4000 specific optimizations
         cv::cuda::setBufferPoolUsage(true);
-        cv::cuda::setBufferPoolConfig(cv::cuda::getDevice(), 
-            2048 * 1024 * 1024,  // 2GB pool for A4000's 24GB VRAM (increased for 4.12.0)
-            8);                  // 8 buffers per stream (optimized for 4.12.0)
-        
-        std::cout << "OpenCV 4.12.0 + CUDA 12.9 + A4000 optimizations enabled" << std::endl;
+        #if CUDA_VERSION >= 12080  // CUDA 12.8 or higher
+            cv::cuda::setBufferPoolConfig(cv::cuda::getDevice(),
+                1536 * 1024 * 1024,  // 1.5GB pool optimized for CUDA 12.8 + A4000
+                6);                   // 6 buffers per stream (12.8 optimized)
+            std::cout << "CUDA 12.8 + RTX A4000 optimized memory pool active" << std::endl;
+        #else
+            cv::cuda::setBufferPoolConfig(cv::cuda::getDevice(),
+                1024 * 1024 * 1024,  // 1GB pool for older CUDA versions
+                4);                   // 4 buffers per stream
+            std::cout << "Standard CUDA memory pool active" << std::endl;
+        #endif
+
+        std::cout << "OpenCV 4.12.0 + CUDA 12.8 + A4000 optimizations enabled" << std::endl;
         std::cout << "Enhanced template matching and multi-stream processing active" << std::endl;
+        
+        // Note about nvidia-smi version mismatch
+        if (cuda_driver_version > cuda_runtime_version) {
+            std::cout << "Note: nvidia-smi may show CUDA " << cuda_driver_version / 1000 << "." << (cuda_driver_version % 100) / 10 
+                      << " (driver max), using toolkit " << cuda_runtime_version / 1000 << "." << (cuda_runtime_version % 100) / 10 
+                      << " - this is normal" << std::endl;
+        }
     }
 #else
     std::cout << "CUDA support not compiled in" << std::endl;
