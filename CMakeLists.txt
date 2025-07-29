@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.16)
 project(RTSPMonitor LANGUAGES CXX CUDA)
 
 # Set C++ standard
@@ -28,6 +28,13 @@ if(MSVC)
     
     # Disable specific warnings
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996 /wd4267 /wd4244")
+    
+    # VS 2019 specific optimizations
+    if(MSVC_VERSION GREATER_EQUAL 1920 AND MSVC_VERSION LESS 1930)
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Ob2")
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG /OPT:REF /OPT:ICF")
+        message(STATUS "Using Visual Studio 2019 optimizations")
+    endif()
 endif()
 
 # Find required packages
@@ -47,6 +54,11 @@ if(WITH_CUDA)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_86,code=sm_86")
         set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O3 -DNDEBUG")
         set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -g -G")
+        
+        # VS 2019 CUDA host compiler
+        if(MSVC_VERSION GREATER_EQUAL 1920 AND MSVC_VERSION LESS 1930)
+            set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
+        endif()
         
         message(STATUS "CUDA support enabled")
         add_definitions(-DWITH_CUDA)

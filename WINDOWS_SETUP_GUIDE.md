@@ -13,18 +13,19 @@ Bu rehber, A4000 GPU ve i7 CPU'lu Windows sisteminde 16+ RTSP yayını için opt
 ### Yazılım
 - **İşletim Sistemi**: Windows 10/11 (64-bit)
 - **CUDA**: 12.8
-- **Visual Studio**: 2022 (Community/Professional/Enterprise)
-- **CMake**: 3.18 veya üzeri
+- **Visual Studio**: 2019 (Community/Professional/Enterprise)
+- **CMake**: 3.16 veya üzeri (VS 2019 uyumlu)
 - **OpenCV**: 4.8+ (CUDA desteği ile)
 
-## Adım 1: Visual Studio 2022 Kurulumu
+## Adım 1: Visual Studio 2019 Kurulumu
 
-1. [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/) indirin
+1. [Visual Studio 2019](https://visualstudio.microsoft.com/vs/older-downloads/) indirin (Community/Professional/Enterprise)
 2. Kurulum sırasında şu bileşenleri seçin:
    - **Desktop development with C++**
-   - **MSVC v143 - VS 2022 C++ x64/x86 build tools**
-   - **Windows 10/11 SDK (latest version)**
-   - **CMake tools for C++**
+   - **MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.29)**
+   - **Windows 10 SDK (10.0.19041.0 veya üzeri)**
+   - **CMake tools for Visual Studio**
+   - **Git for Windows** (opsiyonel)
 
 ## Adım 2: CUDA 12.8 Kurulumu
 
@@ -70,7 +71,7 @@ git checkout 4.8.0
 mkdir C:\opencv_source\build
 cd C:\opencv_source\build
 
-cmake -G "Visual Studio 17 2022" -A x64 ^
+cmake -G "Visual Studio 16 2019" -A x64 ^
     -DCMAKE_BUILD_TYPE=Release ^
     -DCMAKE_INSTALL_PREFIX=C:\opencv ^
     -DOPENCV_EXTRA_MODULES_PATH=C:\opencv_source\opencv_contrib\modules ^
@@ -88,6 +89,7 @@ cmake -G "Visual Studio 17 2022" -A x64 ^
     -DBUILD_EXAMPLES=OFF ^
     -DBUILD_TESTS=OFF ^
     -DBUILD_PERF_TESTS=OFF ^
+    -DCMAKE_GENERATOR_TOOLSET=v142 ^
     C:\opencv_source\opencv
 
 cmake --build . --config Release --parallel

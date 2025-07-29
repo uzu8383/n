@@ -25,16 +25,17 @@ echo CUDA Support: %WITH_CUDA%
 echo.
 
 REM Configure with CMake (using the GUI CMakeLists.txt)
-cmake .. -f ../CMakeLists_GUI.txt -G "Visual Studio 17 2022" -A x64 ^
+cmake .. -f ../CMakeLists_GUI.txt -G "Visual Studio 16 2019" -A x64 ^
     -DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE% ^
     -DWITH_CUDA=%WITH_CUDA% ^
     -DOpenCV_DIR="C:/opencv/build" ^
     -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.8" ^
-    -DQt6_DIR="C:/Qt/6.6.0/msvc2022_64/lib/cmake/Qt6"
+    -DQt6_DIR="C:/Qt/6.6.0/msvc2019_64/lib/cmake/Qt6" ^
+    -DCMAKE_GENERATOR_TOOLSET=v142
 
 if %ERRORLEVEL% neq 0 (
     echo ERROR: CMake configuration failed!
-    echo Make sure Qt6 is installed at C:/Qt/6.6.0/msvc2022_64/
+    echo Make sure Qt6 is installed at C:/Qt/6.6.0/msvc2019_64/
     pause
     exit /b 1
 )

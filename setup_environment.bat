@@ -4,19 +4,19 @@ echo Environment Setup for RTSP Monitor
 echo ===============================================
 
 REM Check for Visual Studio
-echo Checking for Visual Studio 2022...
-if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" (
-    echo [OK] Visual Studio 2022 Community found
-    set VS_PATH=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
-) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat" (
-    echo [OK] Visual Studio 2022 Professional found
-    set VS_PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat
-) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" (
-    echo [OK] Visual Studio 2022 Enterprise found
-    set VS_PATH=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat
+echo Checking for Visual Studio 2019...
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" (
+    echo [OK] Visual Studio 2019 Community found
+    set VS_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
+) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvarsall.bat" (
+    echo [OK] Visual Studio 2019 Professional found
+    set VS_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvarsall.bat
+) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" (
+    echo [OK] Visual Studio 2019 Enterprise found
+    set VS_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat
 ) else (
-    echo [ERROR] Visual Studio 2022 not found!
-    echo Please install Visual Studio 2022 with C++ development tools
+    echo [ERROR] Visual Studio 2019 not found!
+    echo Please install Visual Studio 2019 with C++ development tools
     goto :error
 )
 

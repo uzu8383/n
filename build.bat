@@ -25,11 +25,12 @@ echo CUDA Support: %WITH_CUDA%
 echo.
 
 REM Configure with CMake
-cmake .. -G "Visual Studio 17 2022" -A x64 ^
+cmake .. -G "Visual Studio 16 2019" -A x64 ^
     -DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE% ^
     -DWITH_CUDA=%WITH_CUDA% ^
     -DOpenCV_DIR="C:/opencv/build" ^
-    -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.8"
+    -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.8" ^
+    -DCMAKE_GENERATOR_TOOLSET=v142
 
 if %ERRORLEVEL% neq 0 (
     echo ERROR: CMake configuration failed!
