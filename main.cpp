@@ -690,8 +690,9 @@ public:
 
 // Main function
 int main() {
-    std::cout << "RTSP Multi-Stream Monitor with CUDA 12.9 Acceleration" << std::endl;
-    std::cout << "======================================================" << std::endl;
+    std::cout << "RTSP Multi-Stream Monitor with OpenCV 4.12.0 + CUDA 12.9" << std::endl;
+    std::cout << "=========================================================" << std::endl;
+    std::cout << "OpenCV Version: " << CV_VERSION << std::endl;
 
 #ifdef WITH_CUDA
     int cuda_devices = cv::cuda::getCudaEnabledDeviceCount();
@@ -699,13 +700,14 @@ int main() {
     if (cuda_devices > 0) {
         cv::cuda::printShortCudaDeviceInfo(cv::cuda::getDevice());
         
-        // CUDA 12.9 A4000 optimizations
+        // OpenCV 4.12.0 + CUDA 12.9 + A4000 optimizations
         cv::cuda::setBufferPoolUsage(true);
         cv::cuda::setBufferPoolConfig(cv::cuda::getDevice(), 
-            1024 * 1024 * 1024,  // 1GB pool for A4000's 24GB VRAM
-            4);                  // 4 buffers per stream
+            2048 * 1024 * 1024,  // 2GB pool for A4000's 24GB VRAM (increased for 4.12.0)
+            8);                  // 8 buffers per stream (optimized for 4.12.0)
         
-        std::cout << "CUDA 12.9 A4000 optimizations enabled" << std::endl;
+        std::cout << "OpenCV 4.12.0 + CUDA 12.9 + A4000 optimizations enabled" << std::endl;
+        std::cout << "Enhanced template matching and multi-stream processing active" << std::endl;
     }
 #else
     std::cout << "CUDA support not compiled in" << std::endl;

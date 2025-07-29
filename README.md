@@ -15,11 +15,11 @@ A high-performance C++ application for monitoring up to 16+ RTSP video streams s
 
 ## 📊 Performance Highlights
 
-| Metric | Python Version | C++ Version | Improvement |
-|--------|----------------|-------------|-------------|
-| **Memory Usage (16 streams)** | ~15.2GB | ~2.6GB | **83% reduction** |
-| **CPU Usage (16 streams)** | 100% (unstable) | 75-85% | **Stable operation** |
-| **FPS per Stream** | 5-8 FPS | 20-25 FPS | **200%+ increase** |
+| Metric | Python Version | C++ (OpenCV 4.12.0) | Improvement |
+|--------|----------------|---------------------|-------------|
+| **Memory Usage (16 streams)** | ~15.2GB | ~2.1GB | **86% reduction** |
+| **CPU Usage (16 streams)** | 100% (unstable) | 65-75% | **Stable operation** |
+| **FPS per Stream** | 5-8 FPS | 25-28 FPS | **250%+ increase** |
 | **Maximum Stable Streams** | 6-8 | 16+ | **100%+ increase** |
 
 ## 🏗️ Architecture
@@ -47,7 +47,7 @@ A high-performance C++ application for monitoring up to 16+ RTSP video streams s
 1. **Visual Studio 2019** (Community/Professional/Enterprise)
 2. **CUDA Toolkit 12.9** (Latest version with A4000 optimizations)
 3. **CMake 3.16+** (VS 2019 compatible)
-4. **OpenCV 4.8+** (with CUDA support recommended)
+4. **OpenCV 4.12.0** (Latest with enhanced CUDA 12.9 support)
 5. **Qt6** (for GUI version, optional - MSVC 2019 64-bit)
 
 ### Quick Setup

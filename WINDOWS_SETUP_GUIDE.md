@@ -15,7 +15,7 @@ Bu rehber, A4000 GPU ve i7 CPU'lu Windows sisteminde 16+ RTSP yayını için opt
 - **CUDA**: 12.9 (En güncel sürüm)
 - **Visual Studio**: 2019 (Community/Professional/Enterprise)
 - **CMake**: 3.16 veya üzeri (VS 2019 uyumlu)
-- **OpenCV**: 4.10 (v12.0 - Latest with enhanced CUDA support)
+- **OpenCV**: 4.12.0 (Latest version with advanced CUDA 12.9 support)
 
 ## Adım 1: Visual Studio 2019 Kurulumu
 
@@ -61,20 +61,20 @@ Bu rehber, A4000 GPU ve i7 CPU'lu Windows sisteminde 16+ RTSP yayını için opt
 ## Adım 4: OpenCV CUDA Desteği ile Kurulumu
 
 ### Seçenek A: Önceden Derlenmiş Sürüm (Hızlı)
-1. [OpenCV 4.8.0](https://opencv.org/releases/) indirin
+1. [OpenCV 4.12.0](https://opencv.org/releases/) indirin
 2. `C:\opencv\` klasörüne çıkarın
 3. **DİKKAT**: Bu sürüm CUDA desteği olmayabilir
 
 ### Seçenek B: Kaynak Koddan Derleme (Önerilen - CUDA Desteği İçin)
 
-#### OpenCV Kaynak Kodunu İndirin
+#### OpenCV 4.12.0 Kaynak Kodunu İndirin
 ```cmd
 git clone https://github.com/opencv/opencv.git C:\opencv_source\opencv
 git clone https://github.com/opencv/opencv_contrib.git C:\opencv_source\opencv_contrib
 cd C:\opencv_source\opencv
-git checkout 4.8.0
+git checkout 4.12.0
 cd C:\opencv_source\opencv_contrib
-git checkout 4.8.0
+git checkout 4.12.0
 ```
 
 #### OpenCV'yi CUDA ile Derleyin
@@ -96,10 +96,13 @@ cmake -G "Visual Studio 16 2019" -A x64 ^
     -DWITH_CUBLAS=ON ^
     -DWITH_CUFFT=ON ^
     -DWITH_NVCUVID=ON ^
+    -DWITH_CUDA_RUNTIME_API=ON ^
     -DBUILD_opencv_cudacodec=ON ^
+    -DBUILD_opencv_world=OFF ^
     -DBUILD_EXAMPLES=OFF ^
     -DBUILD_TESTS=OFF ^
     -DBUILD_PERF_TESTS=OFF ^
+    -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.9" ^
     -DCMAKE_GENERATOR_TOOLSET=v142 ^
     C:\opencv_source\opencv
 

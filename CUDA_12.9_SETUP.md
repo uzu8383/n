@@ -147,7 +147,9 @@ cmake -G "Visual Studio 16 2019" -A x64 ^
     -DWITH_CUBLAS=ON ^
     -DWITH_CUFFT=ON ^
     -DWITH_NVCUVID=ON ^
+    -DWITH_CUDA_RUNTIME_API=ON ^
     -DBUILD_opencv_cudacodec=ON ^
+    -DBUILD_opencv_world=OFF ^
     -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.9" ^
     -DCMAKE_GENERATOR_TOOLSET=v142 ^
     C:\opencv_source\opencv
