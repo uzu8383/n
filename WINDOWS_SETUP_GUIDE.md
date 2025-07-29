@@ -15,7 +15,7 @@ Bu rehber, A4000 GPU ve i7 CPU'lu Windows sisteminde 16+ RTSP yayını için opt
 - **CUDA**: 12.9 (En güncel sürüm)
 - **Visual Studio**: 2019 (Community/Professional/Enterprise)
 - **CMake**: 3.16 veya üzeri (VS 2019 uyumlu)
-- **OpenCV**: 4.8+ (CUDA desteği ile)
+- **OpenCV**: 4.10 (v12.0 - Latest with enhanced CUDA support)
 
 ## Adım 1: Visual Studio 2019 Kurulumu
 
