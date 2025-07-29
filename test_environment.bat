@@ -5,13 +5,21 @@ echo ===============================================
 
 echo Testing path handling with spaces and parentheses...
 
-REM Test Visual Studio paths
+REM Test Visual Studio paths (prioritize Enterprise)
+set "VS_ENTERPRISE=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat"
+echo Testing VS Enterprise path: %VS_ENTERPRISE%
+if exist "%VS_ENTERPRISE%" (
+    echo [OK] VS Enterprise path works correctly (Primary choice)
+) else (
+    echo [INFO] VS Enterprise not found
+)
+
 set "VS_COMMUNITY=C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat"
 echo Testing VS Community path: %VS_COMMUNITY%
 if exist "%VS_COMMUNITY%" (
-    echo [OK] VS Community path works correctly
+    echo [OK] VS Community path works correctly (Fallback)
 ) else (
-    echo [INFO] VS Community not found (normal if not installed)
+    echo [INFO] VS Community not found
 )
 
 REM Test CUDA paths  

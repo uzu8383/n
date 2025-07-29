@@ -3,28 +3,29 @@ echo ===============================================
 echo Environment Setup for RTSP Monitor
 echo ===============================================
 
-REM Check for Visual Studio
+REM Check for Visual Studio (prioritize Enterprise)
 echo Checking for Visual Studio 2019...
-set "VS_COMMUNITY=C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat"
-set "VS_PROFESSIONAL=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvarsall.bat"
 set "VS_ENTERPRISE=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat"
+set "VS_PROFESSIONAL=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvarsall.bat"
+set "VS_COMMUNITY=C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat"
 
-if exist "%VS_COMMUNITY%" (
-    echo [OK] Visual Studio 2019 Community found
-    set "VS_PATH=%VS_COMMUNITY%"
-) else if exist "%VS_PROFESSIONAL%" (
-    echo [OK] Visual Studio 2019 Professional found
-    set "VS_PATH=%VS_PROFESSIONAL%"
-) else if exist "%VS_ENTERPRISE%" (
-    echo [OK] Visual Studio 2019 Enterprise found
+if exist "%VS_ENTERPRISE%" (
+    echo [OK] Visual Studio 2019 Enterprise found (Primary choice)
     set "VS_PATH=%VS_ENTERPRISE%"
+    echo Using Enterprise edition with advanced optimization features
+) else if exist "%VS_PROFESSIONAL%" (
+    echo [OK] Visual Studio 2019 Professional found (Fallback)
+    set "VS_PATH=%VS_PROFESSIONAL%"
+) else if exist "%VS_COMMUNITY%" (
+    echo [OK] Visual Studio 2019 Community found (Fallback)
+    set "VS_PATH=%VS_COMMUNITY%"
 ) else (
     echo [ERROR] Visual Studio 2019 not found!
     echo Please install Visual Studio 2019 with C++ development tools
-    echo Expected locations:
-    echo   %VS_COMMUNITY%
-    echo   %VS_PROFESSIONAL%
+    echo Expected locations (in priority order):
     echo   %VS_ENTERPRISE%
+    echo   %VS_PROFESSIONAL%
+    echo   %VS_COMMUNITY%
     goto :error
 )
 

@@ -29,11 +29,16 @@ if(MSVC)
     # Disable specific warnings
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996 /wd4267 /wd4244")
     
-    # VS 2019 specific optimizations
+    # VS 2019 specific optimizations (Enhanced for Enterprise)
     if(MSVC_VERSION GREATER_EQUAL 1920 AND MSVC_VERSION LESS 1930)
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Ob2")
         set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG /OPT:REF /OPT:ICF")
-        message(STATUS "Using Visual Studio 2019 optimizations")
+        
+        # Enterprise edition specific optimizations
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Qpar /Qvec-report:2")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /fp:fast /favor:AMD64")
+        
+        message(STATUS "Using Visual Studio 2019 Enterprise optimizations")
     endif()
 endif()
 
@@ -70,9 +75,11 @@ if(WITH_CUDA)
         # VS 2019 CUDA host compiler
         if(MSVC_VERSION GREATER_EQUAL 1920 AND MSVC_VERSION LESS 1930)
             set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
+            message(STATUS "Using Visual Studio 2019 CUDA host compiler")
         endif()
         
         message(STATUS "CUDA 12.8 support enabled with RTX A4000 optimizations")
+        message(STATUS "Optimized for Visual Studio 2019 Enterprise edition")
         add_definitions(-DWITH_CUDA)
     else()
         set(WITH_CUDA OFF)

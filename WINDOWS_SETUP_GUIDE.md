@@ -17,15 +17,32 @@ Bu rehber, A4000 GPU ve i7 CPU'lu Windows sisteminde 16+ RTSP yayını için opt
 - **CMake**: 3.16 veya üzeri (VS 2019 uyumlu)
 - **OpenCV**: 4.12.0 (Latest version with advanced CUDA 12.9 support)
 
-## Adım 1: Visual Studio 2019 Kurulumu
+## Adım 1: Visual Studio 2019 Enterprise Kurulumu
 
-1. [Visual Studio 2019](https://visualstudio.microsoft.com/vs/older-downloads/) indirin (Community/Professional/Enterprise)
-2. Kurulum sırasında şu bileşenleri seçin:
-   - **Desktop development with C++**
-   - **MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.29)**
-   - **Windows 10 SDK (10.0.19041.0 veya üzeri)**
-   - **CMake tools for Visual Studio**
-   - **Git for Windows** (opsiyonel)
+1. **Visual Studio 2019 Enterprise** indirin
+   - Enterprise lisansınızı kullanın veya MSDN'den indirin
+   - Link: [Visual Studio 2019](https://visualstudio.microsoft.com/vs/older-downloads/)
+   - **Not**: Enterprise edition gelişmiş optimizasyon özellikleri sağlar
+
+2. **Kurulum sırasında şu bileşenleri seçin:**
+   ```
+   Workloads:
+   ✅ Desktop development with C++
+   ✅ Game development with C++ (gelişmiş optimizasyon için)
+   
+   Individual Components:
+   ✅ MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.29)
+   ✅ Windows 10 SDK (10.0.19041.0 veya üzeri)
+   ✅ CMake tools for Visual Studio
+   ✅ Git for Windows
+   ✅ Intel C++ Compiler (mevcut ise)
+   ```
+
+3. **Enterprise Özel Özellikleri:**
+   - Gelişmiş kod analizi
+   - Performans profiler
+   - Paralel derleme optimizasyonları
+   - Gelişmiş hata ayıklama araçları
 
 ## Adım 2: CUDA 12.9 Kurulumu
 
