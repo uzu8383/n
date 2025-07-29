@@ -5,18 +5,26 @@ echo ===============================================
 
 REM Check for Visual Studio
 echo Checking for Visual Studio 2019...
-if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" (
+set "VS_COMMUNITY=C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat"
+set "VS_PROFESSIONAL=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvarsall.bat"
+set "VS_ENTERPRISE=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat"
+
+if exist "%VS_COMMUNITY%" (
     echo [OK] Visual Studio 2019 Community found
-    set VS_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat
-) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvarsall.bat" (
+    set "VS_PATH=%VS_COMMUNITY%"
+) else if exist "%VS_PROFESSIONAL%" (
     echo [OK] Visual Studio 2019 Professional found
-    set VS_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvarsall.bat
-) else if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" (
+    set "VS_PATH=%VS_PROFESSIONAL%"
+) else if exist "%VS_ENTERPRISE%" (
     echo [OK] Visual Studio 2019 Enterprise found
-    set VS_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat
+    set "VS_PATH=%VS_ENTERPRISE%"
 ) else (
     echo [ERROR] Visual Studio 2019 not found!
     echo Please install Visual Studio 2019 with C++ development tools
+    echo Expected locations:
+    echo   %VS_COMMUNITY%
+    echo   %VS_PROFESSIONAL%
+    echo   %VS_ENTERPRISE%
     goto :error
 )
 
@@ -34,37 +42,48 @@ if %ERRORLEVEL% equ 0 (
 
 REM Check for CUDA (prioritize 12.8)
 echo Checking for CUDA...
-if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8" (
+set "CUDA_12_8=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8"
+set "CUDA_12_9=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9"
+
+if exist "%CUDA_12_8%" (
     echo [OK] CUDA 12.8 found (Primary choice)
-    set CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8
+    set "CUDA_PATH=%CUDA_12_8%"
     echo Note: nvidia-smi may show 12.9 - this is normal (driver version)
-) else if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9" (
+) else if exist "%CUDA_12_9%" (
     echo [OK] CUDA 12.9 found (Fallback)
-    set CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9
+    set "CUDA_PATH=%CUDA_12_9%"
     echo Note: CUDA 12.8 is the primary target for this project
 ) else (
     echo [ERROR] CUDA not found in default location
     echo Please ensure CUDA 12.8 or 12.9 is installed
+    echo Expected locations:
+    echo   %CUDA_12_8%
+    echo   %CUDA_12_9%
     echo Download CUDA 12.8: https://developer.nvidia.com/cuda-12-8-0-download-archive
     goto :error
 )
 
 REM Check for OpenCV
 echo Checking for OpenCV...
-if exist "C:\opencv\build" (
-    echo [OK] OpenCV found at C:\opencv\build
+set "OPENCV_BUILD=C:\opencv\build"
+
+if exist "%OPENCV_BUILD%" (
+    echo [OK] OpenCV found at %OPENCV_BUILD%
 ) else (
-    echo [ERROR] OpenCV not found at C:\opencv\build
+    echo [ERROR] OpenCV not found
+    echo Expected location: %OPENCV_BUILD%
     echo Please install OpenCV and extract to C:\opencv\
     echo Download from: https://opencv.org/releases/
     goto :error
 )
 
 REM Check for OpenCV CUDA modules
-if exist "C:\opencv\build\x64\vc16\lib\opencv_cudaimgproc*.lib" (
+set "OPENCV_CUDA_LIB=C:\opencv\build\x64\vc16\lib"
+if exist "%OPENCV_CUDA_LIB%\opencv_cudaimgproc*.lib" (
     echo [OK] OpenCV with CUDA support found
 ) else (
     echo [WARNING] OpenCV CUDA modules not found
+    echo Expected location: %OPENCV_CUDA_LIB%
     echo For optimal performance, use OpenCV compiled with CUDA support
 )
 
@@ -85,9 +104,9 @@ if %ERRORLEVEL% equ 0 (
 REM Set environment variables
 echo.
 echo Setting up environment variables...
-set PATH=%PATH%;C:\opencv\build\x64\vc16\bin
-set PATH=%PATH%;%CUDA_PATH%\bin
-set OpenCV_DIR=C:\opencv\build
+set "PATH=%PATH%;C:\opencv\build\x64\vc16\bin"
+set "PATH=%PATH%;%CUDA_PATH%\bin"
+set "OpenCV_DIR=C:\opencv\build"
 
 echo [OK] Environment setup completed successfully!
 echo.

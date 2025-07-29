@@ -25,14 +25,20 @@ echo CUDA Support: %WITH_CUDA%
 echo.
 
 REM Configure with CMake (prioritize CUDA 12.8)
-if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8" (
-    set CUDA_ROOT=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8
+set "CUDA_12_8=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8"
+set "CUDA_12_9=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9"
+
+if exist "%CUDA_12_8%" (
+    set "CUDA_ROOT=%CUDA_12_8%"
     echo Using CUDA 12.8 (Primary choice)
-) else if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9" (
-    set CUDA_ROOT=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9
+) else if exist "%CUDA_12_9%" (
+    set "CUDA_ROOT=%CUDA_12_9%"
     echo Using CUDA 12.9 (Fallback)
 ) else (
     echo ERROR: No compatible CUDA version found (12.8 or 12.9)
+    echo Expected locations:
+    echo   %CUDA_12_8%
+    echo   %CUDA_12_9%
     pause
     exit /b 1
 )
