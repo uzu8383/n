@@ -53,7 +53,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QButtonGroup, QInputDialog, QSizePolicy, QSplitter,
     QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QSpinBox, QDoubleSpinBox,
     QCheckBox, QLineEdit, QListWidget, QListWidgetItem, QDialogButtonBox,
-    QColorDialog
+    QColorDialog, QComboBox, QTabWidget
 )
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QPoint, QRect, QEvent, QLine
 from PyQt6.QtGui import QImage, QPixmap, QPainter, QPen, QColor, QMouseEvent, QIcon, QPolygon, QFont
@@ -109,6 +109,14 @@ class RTSPCaptureThread:
                     
                 # Tampon boyutunu minimize et (düşük gecikme için)
                 self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                
+                # RTSP performans iyileştirmeleri
+                if self.source_path.startswith('rtsp://'):
+                    self.capture.set(cv2.CAP_PROP_FPS, 30)
+                    self.capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+                    # TCP yerine UDP kullan (daha hızlı)
+                    self.capture.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)
+                    self.capture.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 5000)
                 
                 self.is_running = True
                 logging.info(f"Video kaynağı başarıyla açıldı: {self.source_path}")
@@ -173,6 +181,334 @@ class DetectionZone:
             p1x, p1y = p2x, p2y
             
         return inside
+
+
+# === CAM KENARI ÖLÇÜM SINIFI ===
+class GlassEdgeMeasurement:
+    """Cam kenarı ölçüm sınıfı - Cam üretiminde kalite kontrol için"""
+    def __init__(self):
+        self.edge_detection_method = "canny"  # "canny", "sobel", "laplacian"
+        self.canny_threshold1 = 50
+        self.canny_threshold2 = 150
+        self.blur_kernel_size = 5
+        self.morphology_kernel_size = 3
+        self.min_edge_length = 100
+        self.measurement_unit = "mm"  # "mm", "cm", "pixel"
+        self.pixel_to_mm_ratio = 1.0  # 1 pixel = ? mm
+        self.tolerance_range = 2.0  # mm cinsinden tolerans
+        self.reference_measurements = {}  # Referans ölçümler
+        self.measurement_history = []
+        self.enabled = False
+        
+    def detect_edges(self, frame):
+        """Kenar tespiti yapar"""
+        if frame is None:
+            return None
+            
+        # Gri tonlamaya çevir
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        # Gürültüyü azalt
+        if self.blur_kernel_size > 0:
+            gray = cv2.GaussianBlur(gray, (self.blur_kernel_size, self.blur_kernel_size), 0)
+        
+        # Kenar tespiti
+        if self.edge_detection_method == "canny":
+            edges = cv2.Canny(gray, self.canny_threshold1, self.canny_threshold2)
+        elif self.edge_detection_method == "sobel":
+            sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+            sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+            edges = np.sqrt(sobelx**2 + sobely**2)
+            edges = np.uint8(edges / edges.max() * 255)
+        elif self.edge_detection_method == "laplacian":
+            edges = cv2.Laplacian(gray, cv2.CV_64F)
+            edges = np.uint8(np.absolute(edges))
+            
+        # Morfological işlemler
+        if self.morphology_kernel_size > 0:
+            kernel = np.ones((self.morphology_kernel_size, self.morphology_kernel_size), np.uint8)
+            edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+            
+        return edges
+        
+    def find_glass_edges(self, edges):
+        """Cam kenarlarını bulur"""
+        if edges is None:
+            return []
+            
+        # Konturları bul
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        glass_edges = []
+        for contour in contours:
+            # Kontour uzunluğunu kontrol et
+            arc_length = cv2.arcLength(contour, False)
+            if arc_length > self.min_edge_length:
+                glass_edges.append({
+                    'contour': contour,
+                    'length': arc_length,
+                    'area': cv2.contourArea(contour)
+                })
+                
+        return glass_edges
+        
+    def measure_dimensions(self, glass_edges):
+        """Cam boyutlarını ölçer"""
+        measurements = {
+            'width': 0,
+            'height': 0,
+            'perimeter': 0,
+            'area': 0,
+            'edge_quality': 0,
+            'defects': []
+        }
+        
+        if not glass_edges:
+            return measurements
+            
+        # En büyük kontur (ana cam kenarı)
+        main_edge = max(glass_edges, key=lambda x: x['area'])
+        
+        # Bounding rectangle
+        x, y, w, h = cv2.boundingRect(main_edge['contour'])
+        
+        # Pixel'den mm'ye çevir
+        width_mm = w * self.pixel_to_mm_ratio
+        height_mm = h * self.pixel_to_mm_ratio
+        perimeter_mm = main_edge['length'] * self.pixel_to_mm_ratio
+        area_mm2 = main_edge['area'] * (self.pixel_to_mm_ratio ** 2)
+        
+        measurements.update({
+            'width': width_mm,
+            'height': height_mm,
+            'perimeter': perimeter_mm,
+            'area': area_mm2,
+            'bounding_rect': (x, y, w, h)
+        })
+        
+        return measurements
+        
+    def check_tolerances(self, measurements):
+        """Tolerans kontrolü yapar"""
+        tolerance_results = {
+            'within_tolerance': True,
+            'violations': []
+        }
+        
+        for param, reference_value in self.reference_measurements.items():
+            if param in measurements:
+                measured_value = measurements[param]
+                deviation = abs(measured_value - reference_value)
+                
+                if deviation > self.tolerance_range:
+                    tolerance_results['within_tolerance'] = False
+                    tolerance_results['violations'].append({
+                        'parameter': param,
+                        'measured': measured_value,
+                        'reference': reference_value,
+                        'deviation': deviation,
+                        'tolerance': self.tolerance_range
+                    })
+                    
+        return tolerance_results
+        
+    def save_measurement(self, measurements):
+        """Ölçüm sonuçlarını kaydet"""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        measurement_record = {
+            'timestamp': timestamp,
+            'measurements': measurements,
+            'tolerances': self.check_tolerances(measurements)
+        }
+        
+        self.measurement_history.append(measurement_record)
+        
+        # CSV'ye kaydet
+        csv_file = 'glass_measurements.csv'
+        file_exists = os.path.isfile(csv_file)
+        
+        with open(csv_file, 'a', newline='', encoding='utf-8') as file:
+            fieldnames = ['timestamp', 'width', 'height', 'perimeter', 'area', 'within_tolerance']
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            
+            if not file_exists:
+                writer.writeheader()
+                
+            tolerances = measurement_record['tolerances']
+            
+            writer.writerow({
+                'timestamp': measurement_record['timestamp'],
+                'width': measurements.get('width', 0),
+                'height': measurements.get('height', 0),
+                'perimeter': measurements.get('perimeter', 0),
+                'area': measurements.get('area', 0),
+                'within_tolerance': tolerances['within_tolerance']
+            })
+
+
+# === CAM KENARI ÖLÇÜM AYARLARI DİYALOGU ===
+class GlassEdgeSettingsDialog(QDialog):
+    """Cam kenarı ölçüm ayarları diyalogu"""
+    def __init__(self, glass_measurement, parent=None):
+        super().__init__(parent)
+        self.glass_measurement = glass_measurement
+        self.setWindowTitle("Cam Kenarı Ölçüm Ayarları")
+        self.setFixedSize(500, 600)
+        self.setup_ui()
+        self.load_current_settings()
+        
+    def setup_ui(self):
+        layout = QVBoxLayout(self)
+        
+        # Tab widget
+        tab_widget = QTabWidget()
+        layout.addWidget(tab_widget)
+        
+        # Genel ayarlar tab
+        general_tab = QWidget()
+        general_layout = QVBoxLayout(general_tab)
+        
+        # Kenar tespit yöntemi
+        method_group = QGroupBox("Kenar Tespit Yöntemi")
+        method_layout = QVBoxLayout(method_group)
+        
+        self.method_combo = QComboBox()
+        self.method_combo.addItems(["canny", "sobel", "laplacian"])
+        method_layout.addWidget(QLabel("Yöntem:"))
+        method_layout.addWidget(self.method_combo)
+        
+        general_layout.addWidget(method_group)
+        
+        # Canny parametreleri
+        canny_group = QGroupBox("Canny Parametreleri")
+        canny_layout = QGridLayout(canny_group)
+        
+        canny_layout.addWidget(QLabel("Alt Eşik:"), 0, 0)
+        self.canny_threshold1_spin = QSpinBox()
+        self.canny_threshold1_spin.setRange(1, 255)
+        canny_layout.addWidget(self.canny_threshold1_spin, 0, 1)
+        
+        canny_layout.addWidget(QLabel("Üst Eşik:"), 1, 0)
+        self.canny_threshold2_spin = QSpinBox()
+        self.canny_threshold2_spin.setRange(1, 255)
+        canny_layout.addWidget(self.canny_threshold2_spin, 1, 1)
+        
+        general_layout.addWidget(canny_group)
+        
+        # Filtreleme parametreleri
+        filter_group = QGroupBox("Filtreleme Parametreleri")
+        filter_layout = QGridLayout(filter_group)
+        
+        filter_layout.addWidget(QLabel("Blur Kernel Boyutu:"), 0, 0)
+        self.blur_kernel_spin = QSpinBox()
+        self.blur_kernel_spin.setRange(0, 15)
+        self.blur_kernel_spin.setSingleStep(2)
+        filter_layout.addWidget(self.blur_kernel_spin, 0, 1)
+        
+        filter_layout.addWidget(QLabel("Min Kenar Uzunluğu:"), 1, 0)
+        self.min_edge_length_spin = QSpinBox()
+        self.min_edge_length_spin.setRange(10, 1000)
+        filter_layout.addWidget(self.min_edge_length_spin, 1, 1)
+        
+        general_layout.addWidget(filter_group)
+        
+        tab_widget.addTab(general_tab, "Genel")
+        
+        # Kalibrasyon tab
+        calib_tab = QWidget()
+        calib_layout = QVBoxLayout(calib_tab)
+        
+        calib_group = QGroupBox("Kalibrasyon Ayarları")
+        calib_grid = QGridLayout(calib_group)
+        
+        calib_grid.addWidget(QLabel("Pixel/mm Oranı:"), 0, 0)
+        self.pixel_mm_ratio_spin = QDoubleSpinBox()
+        self.pixel_mm_ratio_spin.setRange(0.001, 100.0)
+        self.pixel_mm_ratio_spin.setDecimals(3)
+        self.pixel_mm_ratio_spin.setSingleStep(0.1)
+        calib_grid.addWidget(self.pixel_mm_ratio_spin, 0, 1)
+        
+        calib_grid.addWidget(QLabel("Tolerans Aralığı:"), 1, 0)
+        self.tolerance_spin = QDoubleSpinBox()
+        self.tolerance_spin.setRange(0.1, 50.0)
+        self.tolerance_spin.setDecimals(2)
+        self.tolerance_spin.setSuffix(" mm")
+        calib_grid.addWidget(self.tolerance_spin, 1, 1)
+        
+        calib_layout.addWidget(calib_group)
+        
+        # Referans ölçümler
+        ref_group = QGroupBox("Referans Ölçümler")
+        ref_layout = QGridLayout(ref_group)
+        
+        ref_layout.addWidget(QLabel("Referans Genişlik:"), 0, 0)
+        self.ref_width_spin = QDoubleSpinBox()
+        self.ref_width_spin.setRange(0, 10000)
+        self.ref_width_spin.setDecimals(2)
+        self.ref_width_spin.setSuffix(" mm")
+        ref_layout.addWidget(self.ref_width_spin, 0, 1)
+        
+        ref_layout.addWidget(QLabel("Referans Yükseklik:"), 1, 0)
+        self.ref_height_spin = QDoubleSpinBox()
+        self.ref_height_spin.setRange(0, 10000)
+        self.ref_height_spin.setDecimals(2)
+        self.ref_height_spin.setSuffix(" mm")
+        ref_layout.addWidget(self.ref_height_spin, 1, 1)
+        
+        calib_layout.addWidget(ref_group)
+        
+        tab_widget.addTab(calib_tab, "Kalibrasyon")
+        
+        # Butonlar
+        button_layout = QHBoxLayout()
+        
+        self.ok_btn = QPushButton("Tamam")
+        self.ok_btn.clicked.connect(self.accept)
+        button_layout.addWidget(self.ok_btn)
+        
+        self.cancel_btn = QPushButton("İptal")
+        self.cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(self.cancel_btn)
+        
+        self.apply_btn = QPushButton("Uygula")
+        self.apply_btn.clicked.connect(self.apply_settings)
+        button_layout.addWidget(self.apply_btn)
+        
+        layout.addLayout(button_layout)
+        
+    def load_current_settings(self):
+        """Mevcut ayarları yükle"""
+        gm = self.glass_measurement
+        
+        self.method_combo.setCurrentText(gm.edge_detection_method)
+        self.canny_threshold1_spin.setValue(gm.canny_threshold1)
+        self.canny_threshold2_spin.setValue(gm.canny_threshold2)
+        self.blur_kernel_spin.setValue(gm.blur_kernel_size)
+        self.min_edge_length_spin.setValue(gm.min_edge_length)
+        self.pixel_mm_ratio_spin.setValue(gm.pixel_to_mm_ratio)
+        self.tolerance_spin.setValue(gm.tolerance_range)
+        
+        # Referans değerler
+        self.ref_width_spin.setValue(gm.reference_measurements.get('width', 0))
+        self.ref_height_spin.setValue(gm.reference_measurements.get('height', 0))
+        
+    def apply_settings(self):
+        """Ayarları uygula"""
+        gm = self.glass_measurement
+        
+        gm.edge_detection_method = self.method_combo.currentText()
+        gm.canny_threshold1 = self.canny_threshold1_spin.value()
+        gm.canny_threshold2 = self.canny_threshold2_spin.value()
+        gm.blur_kernel_size = self.blur_kernel_spin.value()
+        gm.min_edge_length = self.min_edge_length_spin.value()
+        gm.pixel_to_mm_ratio = self.pixel_mm_ratio_spin.value()
+        gm.tolerance_range = self.tolerance_spin.value()
+        
+        # Referans ölçümler
+        gm.reference_measurements['width'] = self.ref_width_spin.value()
+        gm.reference_measurements['height'] = self.ref_height_spin.value()
+        
+        logging.info("Cam kenarı ölçüm ayarları güncellendi")
 
 
 # === HAREKET TESPİT SINIFI ===
@@ -323,6 +659,10 @@ class VideoDisplayWidget(QLabel):
         self.zones = []
         self.zone_colors = {}
         
+        # Cam kenarı ölçüm gösterimi
+        self.show_glass_measurements = False
+        self.glass_measurements = None
+        
     def mousePressEvent(self, event):
         """Fare tıklaması olayı"""
         if event.button() == Qt.MouseButton.LeftButton and self.drawing_zone:
@@ -353,6 +693,16 @@ class VideoDisplayWidget(QLabel):
         """Bölge çizimini başlat"""
         self.drawing_zone = True
         self.current_zone_points = []
+        
+    def set_glass_measurements(self, measurements):
+        """Cam ölçüm sonuçlarını ayarla"""
+        self.glass_measurements = measurements
+        self.update()
+        
+    def toggle_glass_measurement_display(self, show):
+        """Cam ölçüm gösterimini aç/kapat"""
+        self.show_glass_measurements = show
+        self.update()
         
     def paintEvent(self, event):
         """Çizim olayı"""
@@ -391,6 +741,36 @@ class VideoDisplayWidget(QLabel):
                     p2 = QPoint(self.current_zone_points[i+1][0], self.current_zone_points[i+1][1])
                     painter.drawLine(p1, p2)
                     
+        # Cam ölçüm sonuçlarını çiz
+        if self.show_glass_measurements and self.glass_measurements:
+            self.draw_glass_measurements(painter)
+            
+    def draw_glass_measurements(self, painter):
+        """Cam ölçüm sonuçlarını çiz"""
+        measurements = self.glass_measurements
+        
+        # Bounding rectangle çiz
+        if 'bounding_rect' in measurements:
+            x, y, w, h = measurements['bounding_rect']
+            painter.setPen(QPen(QColor(0, 255, 255), 2))  # Cyan
+            painter.drawRect(x, y, w, h)
+            
+            # Ölçüm bilgilerini yaz
+            font = QFont()
+            font.setPointSize(10)
+            painter.setFont(font)
+            painter.setPen(QPen(QColor(255, 255, 255), 1))
+            
+            info_text = []
+            info_text.append(f"Genişlik: {measurements.get('width', 0):.2f} mm")
+            info_text.append(f"Yükseklik: {measurements.get('height', 0):.2f} mm")
+            
+            # Bilgi kutusunu çiz
+            text_y = y - 10
+            for text in info_text:
+                text_y -= 20
+                painter.drawText(x, text_y, text)
+                    
     def update_frame(self, frame):
         """Video karesi güncelle"""
         if frame is not None:
@@ -418,6 +798,9 @@ class SurveillanceSystem(QMainWindow):
         self.motion_detectors = {}  # source_id: MotionDetector
         self.plc_controller = PLCController()
         self.detection_zones = {}  # source_id: [DetectionZone, ...]
+        
+        # Cam kenarı ölçüm sistemi
+        self.glass_measurement = GlassEdgeMeasurement()
         
         # Timer
         self.update_timer = QTimer()
@@ -469,6 +852,30 @@ class SurveillanceSystem(QMainWindow):
         zone_layout.addWidget(self.zone_list)
         
         left_layout.addWidget(zone_group)
+        
+        # Cam Kenarı Ölçüm Ayarları
+        glass_group = QGroupBox("Cam Kenarı Ölçüm")
+        glass_layout = QVBoxLayout(glass_group)
+        
+        self.glass_enable_cb = QCheckBox("Cam Kenarı Ölçümünü Etkinleştir")
+        self.glass_enable_cb.stateChanged.connect(self.toggle_glass_measurement)
+        glass_layout.addWidget(self.glass_enable_cb)
+        
+        self.glass_settings_btn = QPushButton("Ölçüm Ayarları")
+        self.glass_settings_btn.clicked.connect(self.open_glass_settings)
+        glass_layout.addWidget(self.glass_settings_btn)
+        
+        self.glass_show_cb = QCheckBox("Ölçümleri Göster")
+        self.glass_show_cb.stateChanged.connect(self.toggle_glass_display)
+        glass_layout.addWidget(self.glass_show_cb)
+        
+        # Cam ölçüm bilgileri
+        self.glass_info_label = QLabel("Ölçüm Bilgileri:\nHenüz ölçüm yok")
+        self.glass_info_label.setStyleSheet("background-color: #f0f0f0; padding: 5px; border: 1px solid #ccc;")
+        self.glass_info_label.setWordWrap(True)
+        glass_layout.addWidget(self.glass_info_label)
+        
+        left_layout.addWidget(glass_group)
         
         # PLC kontrolleri
         plc_group = QGroupBox("PLC Kontrolü")
@@ -566,6 +973,25 @@ class SurveillanceSystem(QMainWindow):
             
             logging.info(f"Tespit bölgesi oluşturuldu: {zone_name}")
             
+    def toggle_glass_measurement(self, state):
+        """Cam kenarı ölçümünü etkinleştir/devre dışı bırak"""
+        self.glass_measurement.enabled = state == Qt.CheckState.Checked.value
+        if self.glass_measurement.enabled:
+            logging.info("Cam kenarı ölçümü etkinleştirildi")
+        else:
+            logging.info("Cam kenarı ölçümü devre dışı bırakıldı")
+            
+    def toggle_glass_display(self, state):
+        """Cam ölçüm gösterimini aç/kapat"""
+        show = state == Qt.CheckState.Checked.value
+        self.video_display.toggle_glass_measurement_display(show)
+        
+    def open_glass_settings(self):
+        """Cam kenarı ölçüm ayarları diyalogunu aç"""
+        dialog = GlassEdgeSettingsDialog(self.glass_measurement, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            logging.info("Cam kenarı ölçüm ayarları kaydedildi")
+            
     def connect_plc(self):
         """PLC'ye bağlan"""
         ip_address, ok = QInputDialog.getText(self, 'PLC IP Adresi', 
@@ -631,9 +1057,65 @@ class SurveillanceSystem(QMainWindow):
                                 cv2.drawContours(frame, [detection['contour']], -1, (0, 255, 0), 2)
                                 cv2.circle(frame, detection['center'], 5, (0, 0, 255), -1)
                     
+                    # Cam kenarı ölçümü
+                    if self.glass_measurement.enabled and source_id == 0:
+                        self.process_glass_measurement(frame)
+                    
                     # İlk kaynağı görüntüle (genişletilebilir)
                     if source_id == 0:
                         self.video_display.update_frame(frame)
+                        
+    def process_glass_measurement(self, frame):
+        """Cam kenarı ölçümünü işle"""
+        try:
+            # Kenar tespiti
+            edges = self.glass_measurement.detect_edges(frame)
+            if edges is not None:
+                # Cam kenarlarını bul
+                glass_edges = self.glass_measurement.find_glass_edges(edges)
+                
+                if glass_edges:
+                    # Ölçümleri hesapla
+                    measurements = self.glass_measurement.measure_dimensions(glass_edges)
+                    
+                    # Tolerans kontrolü
+                    tolerance_results = self.glass_measurement.check_tolerances(measurements)
+                    
+                    # Ölçüm sonuçlarını kaydet
+                    self.glass_measurement.save_measurement(measurements)
+                    
+                    # UI'yi güncelle
+                    self.update_glass_info_display(measurements, tolerance_results)
+                    
+                    # Video display'e ölçümleri gönder
+                    self.video_display.set_glass_measurements(measurements)
+                    
+                    # Tolerans dışı alarm
+                    if not tolerance_results['within_tolerance']:
+                        violations = tolerance_results['violations']
+                        for violation in violations:
+                            self.trigger_alarm("Cam Ölçüm Tolerans Hatası", 
+                                             f"{violation['parameter']}: {violation['measured']:.2f} mm (Referans: {violation['reference']:.2f} mm)")
+                            
+        except Exception as e:
+            logging.error(f"Cam kenarı ölçüm hatası: {e}")
+            
+    def update_glass_info_display(self, measurements, tolerance_results):
+        """Cam ölçüm bilgi gösterimini güncelle"""
+        info_text = "Cam Ölçüm Bilgileri:\n"
+        info_text += f"Genişlik: {measurements.get('width', 0):.2f} mm\n"
+        info_text += f"Yükseklik: {measurements.get('height', 0):.2f} mm\n"
+        info_text += f"Çevre: {measurements.get('perimeter', 0):.2f} mm\n"
+        info_text += f"Alan: {measurements.get('area', 0):.2f} mm²\n"
+        
+        if tolerance_results['within_tolerance']:
+            info_text += "Tolerans: ✓ UYGUN"
+            self.glass_info_label.setStyleSheet("background-color: #d4edda; padding: 5px; border: 1px solid #c3e6cb; color: #155724;")
+        else:
+            info_text += f"Tolerans: ✗ UYGUN DEĞİL ({len(tolerance_results['violations'])} hata)"
+            self.glass_info_label.setStyleSheet("background-color: #f8d7da; padding: 5px; border: 1px solid #f5c6cb; color: #721c24;")
+            
+        self.glass_info_label.setText(info_text)
                         
     def closeEvent(self, event):
         """Uygulama kapatılırken"""
