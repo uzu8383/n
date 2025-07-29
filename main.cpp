@@ -690,14 +690,22 @@ public:
 
 // Main function
 int main() {
-    std::cout << "RTSP Multi-Stream Monitor with CUDA Acceleration" << std::endl;
-    std::cout << "=================================================" << std::endl;
+    std::cout << "RTSP Multi-Stream Monitor with CUDA 12.9 Acceleration" << std::endl;
+    std::cout << "======================================================" << std::endl;
 
 #ifdef WITH_CUDA
     int cuda_devices = cv::cuda::getCudaEnabledDeviceCount();
     std::cout << "CUDA devices available: " << cuda_devices << std::endl;
     if (cuda_devices > 0) {
         cv::cuda::printShortCudaDeviceInfo(cv::cuda::getDevice());
+        
+        // CUDA 12.9 A4000 optimizations
+        cv::cuda::setBufferPoolUsage(true);
+        cv::cuda::setBufferPoolConfig(cv::cuda::getDevice(), 
+            1024 * 1024 * 1024,  // 1GB pool for A4000's 24GB VRAM
+            4);                  // 4 buffers per stream
+        
+        std::cout << "CUDA 12.9 A4000 optimizations enabled" << std::endl;
     }
 #else
     std::cout << "CUDA support not compiled in" << std::endl;

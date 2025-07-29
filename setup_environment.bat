@@ -33,13 +33,17 @@ if %ERRORLEVEL% equ 0 (
 )
 
 REM Check for CUDA
-echo Checking for CUDA 12.8...
-if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8" (
-    echo [OK] CUDA 12.8 found
+echo Checking for CUDA 12.9...
+if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9" (
+    echo [OK] CUDA 12.9 found
+    set CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9
+) else if exist "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8" (
+    echo [WARNING] Found CUDA 12.8, but 12.9 is recommended
+    echo Please update to CUDA 12.9 for best performance
     set CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8
 ) else (
-    echo [WARNING] CUDA 12.8 not found in default location
-    echo Please ensure CUDA 12.8 is installed
+    echo [ERROR] CUDA 12.9 not found in default location
+    echo Please ensure CUDA 12.9 is installed
     echo Download from: https://developer.nvidia.com/cuda-downloads
 )
 
@@ -66,7 +70,7 @@ REM Set environment variables
 echo.
 echo Setting up environment variables...
 set PATH=%PATH%;C:\opencv\build\x64\vc16\bin
-set PATH=%PATH%;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8\bin
+set PATH=%PATH%;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\bin
 set OpenCV_DIR=C:\opencv\build
 
 echo [OK] Environment setup completed successfully!

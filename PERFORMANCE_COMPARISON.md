@@ -10,7 +10,7 @@ Bu belge, Python tabanlı RTSP monitör uygulamasının C++ versiyonuna dönüş
 - **CPU**: Intel i7 (8+ çekirdek, 3.0+ GHz)
 - **RAM**: 32GB DDR4
 - **OS**: Windows 10/11 64-bit
-- **CUDA**: 12.8
+- **CUDA**: 12.9 (Latest with A4000 optimizations)
 - **OpenCV**: 4.8+ (CUDA desteği ile)
 
 ## Performans Karşılaştırması

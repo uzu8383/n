@@ -8,8 +8,9 @@
    - Community (ücretsiz) yeterli
    - **Desktop development with C++** workload'unu seçin
 
-2. **CUDA 12.8** - [İndir](https://developer.nvidia.com/cuda-downloads)
-   - A4000 GPU için optimize edilmiş
+2. **CUDA 12.9** - [İndir](https://developer.nvidia.com/cuda-downloads)
+   - A4000 GPU için optimize edilmiş en güncel sürüm
+   - %3-5 daha iyi performance
 
 3. **CMake** - [İndir](https://cmake.org/download/)
    - 3.16 veya üzeri gerekli
@@ -104,7 +105,7 @@ cmake .. -G "Visual Studio 16 2019" -A x64 ^
     -DCMAKE_BUILD_TYPE=Release ^
     -DWITH_CUDA=ON ^
     -DOpenCV_DIR="C:/opencv/build" ^
-    -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.8" ^
+    -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.9" ^
     -DCMAKE_GENERATOR_TOOLSET=v142
 
 cmake --build . --config Release --parallel

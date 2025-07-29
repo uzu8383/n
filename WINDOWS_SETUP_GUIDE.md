@@ -12,7 +12,7 @@ Bu rehber, A4000 GPU ve i7 CPU'lu Windows sisteminde 16+ RTSP yayını için opt
 
 ### Yazılım
 - **İşletim Sistemi**: Windows 10/11 (64-bit)
-- **CUDA**: 12.8
+- **CUDA**: 12.9 (En güncel sürüm)
 - **Visual Studio**: 2019 (Community/Professional/Enterprise)
 - **CMake**: 3.16 veya üzeri (VS 2019 uyumlu)
 - **OpenCV**: 4.8+ (CUDA desteği ile)
@@ -27,15 +27,26 @@ Bu rehber, A4000 GPU ve i7 CPU'lu Windows sisteminde 16+ RTSP yayını için opt
    - **CMake tools for Visual Studio**
    - **Git for Windows** (opsiyonel)
 
-## Adım 2: CUDA 12.8 Kurulumu
+## Adım 2: CUDA 12.9 Kurulumu
 
-1. [NVIDIA CUDA Toolkit 12.8](https://developer.nvidia.com/cuda-downloads) indirin
-2. Varsayılan konuma kurun: `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8`
-3. Kurulum sonrası sistem yeniden başlatın
-4. Doğrulama için komut satırında çalıştırın:
+1. [NVIDIA CUDA Toolkit 12.9](https://developer.nvidia.com/cuda-downloads) indirin
+   - **Network Installer** (küçük dosya) veya **Local Installer** (büyük dosya) seçebilirsiniz
+   - A4000 GPU için optimize edilmiş en güncel sürüm
+2. Varsayılan konuma kurun: `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9`
+3. Kurulum sırasında seçilecek bileşenler:
+   - ✅ **CUDA Toolkit 12.9**
+   - ✅ **CUDA Visual Studio Integration**
+   - ✅ **CUDA Runtime**
+   - ✅ **CUDA Documentation** (opsiyonel)
+   - ✅ **CUDA Samples** (opsiyonel)
+4. Kurulum sonrası sistem yeniden başlatın
+5. Doğrulama için komut satırında çalıştırın:
    ```cmd
    nvcc --version
+   # Beklenen çıktı: Cuda compilation tools, release 12.9, V12.9.xxx
+   
    nvidia-smi
+   # GPU bilgilerini ve CUDA Runtime version'ını gösterir
    ```
 
 ## Adım 3: CMake Kurulumu

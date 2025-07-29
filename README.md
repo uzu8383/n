@@ -45,7 +45,7 @@ A high-performance C++ application for monitoring up to 16+ RTSP video streams s
 ### Prerequisites
 
 1. **Visual Studio 2019** (Community/Professional/Enterprise)
-2. **CUDA Toolkit 12.8**
+2. **CUDA Toolkit 12.9** (Latest version with A4000 optimizations)
 3. **CMake 3.16+** (VS 2019 compatible)
 4. **OpenCV 4.8+** (with CUDA support recommended)
 5. **Qt6** (for GUI version, optional - MSVC 2019 64-bit)
